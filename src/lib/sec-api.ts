@@ -5,6 +5,32 @@ import { Company, InsiderTransaction, TransactionType } from '@/types';
 const SEC_USER_AGENT = 'InsiderTracker contact@example.com';
 const COMPANY_TICKERS_URL = 'https://www.sec.gov/files/company_tickers.json';
 
+// Constants for parsing OpenInsider table
+const TABLE_CELL_INDICES = {
+  FILING_DATE: 1,
+  TRADE_DATE: 2,
+  TICKER: 3,
+  INSIDER_NAME: 4,
+  TITLE: 5,
+  TRADE_TYPE: 6,
+  PRICE: 7,
+  QUANTITY: 8,
+  OWNED: 9,
+  CHANGE: 10,
+  VALUE: 11,
+  MIN_COLUMNS: 12,
+} as const;
+
+// Constants for sentiment analysis
+const SENTIMENT_THRESHOLDS = {
+  BULLISH_RATIO: 1.5,
+  BEARISH_RATIO: 0.5,
+  BULLISH_NET_VALUE: 500000,
+  BEARISH_NET_VALUE: -500000,
+} as const;
+
+const SEARCH_RESULT_LIMIT = 10;
+
 interface CompanyTicker {
   cik_str: number;
   ticker: string;
@@ -67,7 +93,7 @@ export async function searchCompanies(query: string): Promise<Company[]> {
         cik: company.cik_str.toString().padStart(10, '0'),
       });
     }
-    if (results.length >= 10) break;
+    if (results.length >= SEARCH_RESULT_LIMIT) break;
   }
 
   // Fuzzy ticker search
@@ -79,10 +105,10 @@ export async function searchCompanies(query: string): Promise<Company[]> {
         cik: company.cik_str.toString().padStart(10, '0'),
       });
     }
-    if (results.length >= 10) break;
+    if (results.length >= SEARCH_RESULT_LIMIT) break;
   }
 
-  return results.slice(0, 10);
+  return results.slice(0, SEARCH_RESULT_LIMIT);
 }
 
 // Get company by ticker
@@ -99,12 +125,103 @@ export async function getCompanyByTicker(ticker: string): Promise<Company | null
   };
 }
 
+// Helper functions for parsing table cells
+function parseNumericValue(text: string): number {
+  const cleaned = text.replace(/[$,+\-]/g, '');
+  return parseFloat(cleaned) || 0;
+}
+
+function parseIntegerValue(text: string): number {
+  const cleaned = text.replace(/[,+]/g, '');
+  return parseInt(cleaned) || 0;
+}
+
+function parseTransactionType(tradeTypeRaw: string): TransactionType {
+  return tradeTypeRaw.split(' ')[0].charAt(0) as TransactionType;
+}
+
+function parseSecUrl(href: string | undefined): string {
+  if (!href) return '';
+  return href.startsWith('http') ? href : `https://www.sec.gov${href}`;
+}
+
+function calculateSignedValue(value: number, tradeType: TransactionType): number {
+  return (tradeType === 'S' || tradeType === 'F') ? -value : value;
+}
+
+function parseTableRow(
+  row: cheerio.Element,
+  $: cheerio.Root,
+  ticker: string,
+  index: number
+): InsiderTransaction | null {
+  const cells = $(row).find('td');
+
+  if (cells.length < TABLE_CELL_INDICES.MIN_COLUMNS) {
+    return null;
+  }
+
+  try {
+    // Extract cell data using constants
+    const filingDateCell = $(cells[TABLE_CELL_INDICES.FILING_DATE]);
+    const filingDate = filingDateCell.text().trim().split(' ')[0];
+    const secUrl = parseSecUrl(filingDateCell.find('a').attr('href'));
+
+    const tradeDate = $(cells[TABLE_CELL_INDICES.TRADE_DATE]).text().trim();
+    const tickerText = $(cells[TABLE_CELL_INDICES.TICKER]).text().trim();
+    const insiderName = $(cells[TABLE_CELL_INDICES.INSIDER_NAME]).text().trim();
+    const title = $(cells[TABLE_CELL_INDICES.TITLE]).text().trim();
+    const tradeTypeRaw = $(cells[TABLE_CELL_INDICES.TRADE_TYPE]).text().trim();
+
+    // Parse transaction type
+    const tradeType = parseTransactionType(tradeTypeRaw);
+
+    // Parse numeric values
+    const price = parseNumericValue($(cells[TABLE_CELL_INDICES.PRICE]).text().trim());
+    const qty = parseIntegerValue($(cells[TABLE_CELL_INDICES.QUANTITY]).text().trim());
+    const owned = parseIntegerValue($(cells[TABLE_CELL_INDICES.OWNED]).text().trim());
+    const change = parseNumericValue($(cells[TABLE_CELL_INDICES.CHANGE]).text().trim().replace('%', ''));
+
+    // Parse and sign the value based on transaction type
+    const value = parseNumericValue($(cells[TABLE_CELL_INDICES.VALUE]).text().trim());
+    const signedValue = calculateSignedValue(value, tradeType);
+    const signedShares = calculateSignedValue(Math.abs(qty), tradeType);
+
+    // Validate required fields
+    if (!insiderName || !tradeDate) {
+      return null;
+    }
+
+    return {
+      id: `${tickerText}-${filingDate}-${index}`,
+      filingDate,
+      tradeDate,
+      ticker: tickerText || ticker.toUpperCase(),
+      insiderName,
+      insiderTitle: title,
+      transactionType: tradeType,
+      transactionCode: tradeTypeRaw,
+      shares: signedShares,
+      pricePerShare: price,
+      totalValue: signedValue,
+      sharesOwnedAfter: owned,
+      ownershipChangePercent: change,
+      directOrIndirect: 'D',
+      is10b51Plan: false,
+      secFilingUrl: secUrl,
+    };
+  } catch (e) {
+    console.error('Error parsing row:', e);
+    return null;
+  }
+}
+
 // Fetch insider transactions from OpenInsider
 export async function fetchInsiderTransactions(
   ticker: string
 ): Promise<InsiderTransaction[]> {
   const url = `http://openinsider.com/${ticker.toUpperCase()}`;
-  
+
   try {
     const response = await axios.get(url, {
       headers: {
@@ -116,70 +233,11 @@ export async function fetchInsiderTransactions(
     const $ = cheerio.load(response.data);
     const transactions: InsiderTransaction[] = [];
 
-    // Parse the main table
+    // Parse each row in the main table
     $('table.tinytable tbody tr').each((index, row) => {
-      const cells = $(row).find('td');
-      
-      if (cells.length < 12) return;
-
-      try {
-        const filingDateCell = $(cells[1]);
-        const filingDate = filingDateCell.text().trim().split(' ')[0];
-        const secUrl = filingDateCell.find('a').attr('href') || '';
-        
-        const tradeDate = $(cells[2]).text().trim();
-        const tickerText = $(cells[3]).text().trim();
-        const insiderName = $(cells[4]).text().trim();
-        const title = $(cells[5]).text().trim();
-        const tradeTypeRaw = $(cells[6]).text().trim();
-        
-        // Parse trade type
-        const tradeType = tradeTypeRaw.split(' ')[0].charAt(0) as TransactionType;
-        
-        // Parse price
-        const priceText = $(cells[7]).text().trim().replace('$', '').replace(',', '');
-        const price = parseFloat(priceText) || 0;
-        
-        // Parse quantity
-        const qtyText = $(cells[8]).text().trim().replace(',', '').replace('+', '');
-        const qty = parseInt(qtyText) || 0;
-        
-        // Parse owned shares
-        const ownedText = $(cells[9]).text().trim().replace(',', '');
-        const owned = parseInt(ownedText) || 0;
-        
-        // Parse ownership change
-        const changeText = $(cells[10]).text().trim().replace('%', '').replace('+', '');
-        const change = parseFloat(changeText) || 0;
-        
-        // Parse value
-        const valueText = $(cells[11]).text().trim().replace('$', '').replace(',', '').replace('+', '').replace('-', '');
-        const value = parseFloat(valueText) || 0;
-        const signedValue = tradeType === 'S' || tradeType === 'F' ? -value : value;
-
-        if (insiderName && tradeDate) {
-          transactions.push({
-            id: `${tickerText}-${filingDate}-${index}`,
-            filingDate,
-            tradeDate,
-            ticker: tickerText || ticker.toUpperCase(),
-            insiderName,
-            insiderTitle: title,
-            transactionType: tradeType,
-            transactionCode: tradeTypeRaw,
-            shares: tradeType === 'S' || tradeType === 'F' ? -Math.abs(qty) : Math.abs(qty),
-            pricePerShare: price,
-            totalValue: signedValue,
-            sharesOwnedAfter: owned,
-            ownershipChangePercent: change,
-            directOrIndirect: 'D',
-            is10b51Plan: false,
-            secFilingUrl: secUrl.startsWith('http') ? secUrl : `https://www.sec.gov${secUrl}`,
-          });
-        }
-      } catch (e) {
-        // Skip malformed rows
-        console.error('Error parsing row:', e);
+      const transaction = parseTableRow(row, $, ticker, index);
+      if (transaction) {
+        transactions.push(transaction);
       }
     });
 
@@ -188,6 +246,115 @@ export async function fetchInsiderTransactions(
     console.error('Error fetching from OpenInsider:', error);
     throw new Error('Failed to fetch insider trading data');
   }
+}
+
+// Helper functions for summary calculation
+function filterTransactionsByDateRange(
+  transactions: InsiderTransaction[],
+  days: number
+): InsiderTransaction[] {
+  const cutoffDate = new Date();
+  cutoffDate.setDate(cutoffDate.getDate() - days);
+
+  return transactions.filter(t => {
+    const tradeDate = new Date(t.tradeDate);
+    return tradeDate >= cutoffDate;
+  });
+}
+
+function separateTransactionsByType(transactions: InsiderTransaction[]) {
+  const buyTransactions = transactions.filter(t => t.transactionType === 'P');
+  const sellTransactions = transactions.filter(t =>
+    t.transactionType === 'S' || t.transactionType === 'F'
+  );
+
+  return { buyTransactions, sellTransactions };
+}
+
+function calculateTransactionValues(
+  buyTransactions: InsiderTransaction[],
+  sellTransactions: InsiderTransaction[]
+) {
+  const totalBuyValue = buyTransactions.reduce(
+    (sum, t) => sum + Math.abs(t.totalValue),
+    0
+  );
+  const totalSellValue = sellTransactions.reduce(
+    (sum, t) => sum + Math.abs(t.totalValue),
+    0
+  );
+
+  return { totalBuyValue, totalSellValue };
+}
+
+function groupTransactionsByInsider(transactions: InsiderTransaction[]) {
+  const byInsider: Record<string, {
+    name: string;
+    title: string;
+    transactions: InsiderTransaction[];
+    netShares: number;
+    netValue: number;
+  }> = {};
+
+  const insidersSet = new Set<string>();
+  const buyersSet = new Set<string>();
+  const sellersSet = new Set<string>();
+
+  for (const transaction of transactions) {
+    const { insiderName, transactionType, shares, totalValue, insiderTitle } = transaction;
+
+    insidersSet.add(insiderName);
+
+    // Track buyers and sellers
+    if (transactionType === 'P') {
+      buyersSet.add(insiderName);
+    } else if (transactionType === 'S' || transactionType === 'F') {
+      sellersSet.add(insiderName);
+    }
+
+    // Initialize insider record if needed
+    if (!byInsider[insiderName]) {
+      byInsider[insiderName] = {
+        name: insiderName,
+        title: insiderTitle,
+        transactions: [],
+        netShares: 0,
+        netValue: 0,
+      };
+    }
+
+    // Accumulate data
+    byInsider[insiderName].transactions.push(transaction);
+    byInsider[insiderName].netShares += shares;
+    byInsider[insiderName].netValue += totalValue;
+  }
+
+  return {
+    byInsider,
+    insidersCount: insidersSet.size,
+    buyersCount: buyersSet.size,
+    sellersCount: sellersSet.size,
+  };
+}
+
+function calculateSentiment(
+  buyCount: number,
+  sellCount: number,
+  netValue: number
+): 'Bullish' | 'Bearish' | 'Neutral' {
+  const ratio = buyCount / (sellCount || 1);
+
+  if (ratio > SENTIMENT_THRESHOLDS.BULLISH_RATIO ||
+      netValue > SENTIMENT_THRESHOLDS.BULLISH_NET_VALUE) {
+    return 'Bullish';
+  }
+
+  if (ratio < SENTIMENT_THRESHOLDS.BEARISH_RATIO ||
+      netValue < SENTIMENT_THRESHOLDS.BEARISH_NET_VALUE) {
+    return 'Bearish';
+  }
+
+  return 'Neutral';
 }
 
 // Calculate summary statistics
@@ -217,82 +384,43 @@ export function calculateSummary(
     netValue: number;
   }>;
 } {
-  // Filter by date range
-  const cutoffDate = new Date();
-  cutoffDate.setDate(cutoffDate.getDate() - days);
-  
-  const filtered = transactions.filter(t => {
-    const tradeDate = new Date(t.tradeDate);
-    return tradeDate >= cutoffDate;
-  });
+  // Filter transactions by date range
+  const filteredTransactions = filterTransactionsByDateRange(transactions, days);
 
-  // Calculate basic stats
-  const buyTx = filtered.filter(t => t.transactionType === 'P');
-  const sellTx = filtered.filter(t => t.transactionType === 'S' || t.transactionType === 'F');
-  
-  const totalBuyValue = buyTx.reduce((sum, t) => sum + Math.abs(t.totalValue), 0);
-  const totalSellValue = sellTx.reduce((sum, t) => sum + Math.abs(t.totalValue), 0);
-  
-  // Group by insider
-  const byInsider: Record<string, {
-    name: string;
-    title: string;
-    transactions: InsiderTransaction[];
-    netShares: number;
-    netValue: number;
-  }> = {};
+  // Separate buy and sell transactions
+  const { buyTransactions, sellTransactions } = separateTransactionsByType(filteredTransactions);
 
-  const insidersSet = new Set<string>();
-  const buyersSet = new Set<string>();
-  const sellersSet = new Set<string>();
+  // Calculate transaction values
+  const { totalBuyValue, totalSellValue } = calculateTransactionValues(
+    buyTransactions,
+    sellTransactions
+  );
 
-  for (const t of filtered) {
-    insidersSet.add(t.insiderName);
-    
-    if (t.transactionType === 'P') {
-      buyersSet.add(t.insiderName);
-    } else if (t.transactionType === 'S' || t.transactionType === 'F') {
-      sellersSet.add(t.insiderName);
-    }
+  // Group transactions by insider
+  const {
+    byInsider,
+    insidersCount,
+    buyersCount,
+    sellersCount,
+  } = groupTransactionsByInsider(filteredTransactions);
 
-    if (!byInsider[t.insiderName]) {
-      byInsider[t.insiderName] = {
-        name: t.insiderName,
-        title: t.insiderTitle,
-        transactions: [],
-        netShares: 0,
-        netValue: 0,
-      };
-    }
-    
-    byInsider[t.insiderName].transactions.push(t);
-    byInsider[t.insiderName].netShares += t.shares;
-    byInsider[t.insiderName].netValue += t.totalValue;
-  }
-
-  // Calculate sentiment
+  // Calculate metrics
   const netValue = totalBuyValue - totalSellValue;
-  const ratio = buyTx.length / (sellTx.length || 1);
-  
-  let sentiment: 'Bullish' | 'Bearish' | 'Neutral' = 'Neutral';
-  if (ratio > 1.5 || netValue > 500000) {
-    sentiment = 'Bullish';
-  } else if (ratio < 0.5 || netValue < -500000) {
-    sentiment = 'Bearish';
-  }
+  const buyToSellRatio = buyTransactions.length / (sellTransactions.length || 1);
+  const sentiment = calculateSentiment(buyTransactions.length, sellTransactions.length, netValue);
 
   return {
     summary: {
-      totalTransactions: filtered.length,
-      buyTransactions: buyTx.length,
-      sellTransactions: sellTx.length,
+      totalTransactions: filteredTransactions.length,
+      buyTransactions: buyTransactions.length,
+      sellTransactions: sellTransactions.length,
       totalBuyValue,
       totalSellValue,
       netValue,
-      activeInsiders: insidersSet.size,
-      insidersBuying: buyersSet.size,
-      insidersSelling: sellersSet.size,
-      buyToSellRatio: ratio,
+      activeInsiders: insidersCount,
+      insidersBuying: buyersCount,
+      insidersSelling: sellersCount,
+      buyToSellRatio,
       sentiment,
     },
     byInsider,
