@@ -11,7 +11,8 @@ export async function GET(
 ) {
   const { ticker } = await params;
   const searchParams = request.nextUrl.searchParams;
-  const days = parseInt(searchParams.get('days') || '90');
+  const daysParam = parseInt(searchParams.get('days') || '90');
+  const days = !isNaN(daysParam) && daysParam > 0 ? daysParam : 90;
 
   try {
     // Get company info
