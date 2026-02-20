@@ -13,6 +13,7 @@ export interface Insider {
   title: string;
   relationship: string[];
   totalShares?: number;
+  lastTradeDate?: string;
 }
 
 // Transaction types

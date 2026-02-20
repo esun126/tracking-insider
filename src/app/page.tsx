@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { Loader2, RefreshCw, Building2, TrendingUp } from 'lucide-react';
-import { SearchBar, SummaryCards, TransactionTable, InsiderBreakdown, InsiderList } from '@/components';
+import { SearchBar, SummaryCards, TransactionTable, InsiderBreakdown, InsiderList, PelosiTracker } from '@/components';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { Company, InsiderTransaction } from '@/types';
 
@@ -185,8 +185,24 @@ export default function Home() {
             {/* Summary Cards */}
             <SummaryCards summary={data.summary} days={days} />
 
-            {/* Insider List */}
-            <InsiderList byInsider={data.byInsider} />
+            {/* Parallel View: Company Insiders & Congressional Monitor */}
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+              <div className="space-y-4">
+                <h3 className="text-xl font-semibold text-text-primary flex items-center gap-2">
+                  <Building2 className="w-5 h-5 text-cyan-400" />
+                  Company Insiders
+                </h3>
+                <InsiderList byInsider={data.byInsider} />
+              </div>
+              
+              <div className="space-y-4">
+                <h3 className="text-xl font-semibold text-text-primary flex items-center gap-2">
+                  <TrendingUp className="w-5 h-5 text-violet-400" />
+                  Congressional Monitor
+                </h3>
+                <PelosiTracker currentTicker={data.company.ticker} />
+              </div>
+            </div>
 
             {/* Two Column Layout */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -205,16 +221,27 @@ export default function Home() {
 
         {/* Empty State */}
         {!data && !loading && !error && (
-          <div className="text-center py-20">
-            <div className="inline-flex items-center justify-center w-20 h-20 rounded-3xl bg-bg-surface/50 border border-border-strong/50 mb-6">
-              <TrendingUp className="w-10 h-10 text-text-faint" />
+          <div className="space-y-8">
+            <div className="text-center py-20">
+              <div className="inline-flex items-center justify-center w-20 h-20 rounded-3xl bg-bg-surface/50 border border-border-strong/50 mb-6">
+                <TrendingUp className="w-10 h-10 text-text-faint" />
+              </div>
+              <h3 className="text-xl font-semibold text-text-muted mb-2">
+                Search for a company to get started
+              </h3>
+              <p className="text-text-faint max-w-md mx-auto">
+                Enter a stock ticker symbol like AAPL, TSLA, or MSFT, or search by company name
+              </p>
             </div>
-            <h3 className="text-xl font-semibold text-text-muted mb-2">
-              Search for a company to get started
-            </h3>
-            <p className="text-text-faint max-w-md mx-auto">
-              Enter a stock ticker symbol like AAPL, TSLA, or MSFT, or search by company name
-            </p>
+            
+            {/* Nancy Pelosi Tracker - Always Visible */}
+            <div className="space-y-4">
+              <h3 className="text-xl font-semibold text-text-primary flex items-center gap-2">
+                <TrendingUp className="w-5 h-5 text-violet-400" />
+                Congressional Monitor
+              </h3>
+              <PelosiTracker />
+            </div>
           </div>
         )}
       </main>

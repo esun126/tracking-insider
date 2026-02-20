@@ -294,6 +294,7 @@ function groupTransactionsByInsider(transactions: InsiderTransaction[]) {
     transactions: InsiderTransaction[];
     netShares: number;
     netValue: number;
+    lastTradeDate: string;
   }> = {};
 
   const insidersSet = new Set<string>();
@@ -320,6 +321,7 @@ function groupTransactionsByInsider(transactions: InsiderTransaction[]) {
         transactions: [],
         netShares: 0,
         netValue: 0,
+        lastTradeDate: transaction.tradeDate,
       };
     }
 
@@ -327,6 +329,11 @@ function groupTransactionsByInsider(transactions: InsiderTransaction[]) {
     byInsider[insiderName].transactions.push(transaction);
     byInsider[insiderName].netShares += shares;
     byInsider[insiderName].netValue += totalValue;
+
+    // Track the most recent trade date
+    if (transaction.tradeDate > (byInsider[insiderName].lastTradeDate ?? '')) {
+      byInsider[insiderName].lastTradeDate = transaction.tradeDate;
+    }
   }
 
   return {
@@ -382,6 +389,7 @@ export function calculateSummary(
     transactions: InsiderTransaction[];
     netShares: number;
     netValue: number;
+    lastTradeDate: string;
   }>;
 } {
   // Filter transactions by date range
