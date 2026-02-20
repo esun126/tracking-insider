@@ -55,12 +55,12 @@ export function getTransactionLabel(type: string): string {
 export function getTransactionColor(type: string): string {
   if (type === 'P') return 'text-emerald-400';
   if (type === 'S' || type === 'F') return 'text-rose-400';
-  return 'text-slate-400';
+  return 'text-text-muted';
 }
 
 // Get transaction background color
 export function getTransactionBgColor(type: string): string {
   if (type === 'P') return 'bg-emerald-500/10';
   if (type === 'S' || type === 'F') return 'bg-rose-500/10';
-  return 'bg-slate-500/10';
+  return 'bg-bg-elevated/50';
 }

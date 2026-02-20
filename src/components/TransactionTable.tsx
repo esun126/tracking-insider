@@ -69,10 +69,10 @@ export function TransactionTable({ transactions }: TransactionTableProps) {
   };
 
   return (
-    <div className="bg-slate-900/50 rounded-2xl border border-slate-700/50 overflow-hidden">
+    <div className="bg-bg-surface/50 rounded-2xl border border-border-strong/50 overflow-hidden">
       {/* Header */}
-      <div className="px-6 py-4 border-b border-slate-700/50 flex items-center justify-between">
-        <h3 className="text-lg font-semibold text-white">Transaction History</h3>
+      <div className="px-6 py-4 border-b border-border-strong/50 flex items-center justify-between">
+        <h3 className="text-lg font-semibold text-text-primary">Transaction History</h3>
         <div className="flex gap-2">
           {(['all', 'buy', 'sell'] as const).map((f) => (
             <button
@@ -85,7 +85,7 @@ export function TransactionTable({ transactions }: TransactionTableProps) {
                     : f === 'sell'
                     ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30'
                     : 'bg-violet-500/20 text-violet-400 border border-violet-500/30'
-                  : 'bg-slate-800 text-slate-400 border border-transparent hover:border-slate-600'
+                  : 'bg-bg-elevated text-text-muted border border-transparent hover:border-border-strong'
               }`}
             >
               {f.charAt(0).toUpperCase() + f.slice(1)}
@@ -98,10 +98,10 @@ export function TransactionTable({ transactions }: TransactionTableProps) {
       <div className="overflow-x-auto">
         <table className="w-full">
           <thead>
-            <tr className="text-slate-400 text-sm border-b border-slate-700/50">
+            <tr className="text-text-muted text-sm border-b border-border-strong/50">
               <th
                 onClick={() => handleSort('tradeDate')}
-                className="text-left px-6 py-3 font-medium cursor-pointer hover:text-white transition-colors"
+                className="text-left px-6 py-3 font-medium cursor-pointer hover:text-text-primary transition-colors"
               >
                 <div className="flex items-center gap-1">
                   Date
@@ -110,7 +110,7 @@ export function TransactionTable({ transactions }: TransactionTableProps) {
               </th>
               <th
                 onClick={() => handleSort('insiderName')}
-                className="text-left px-6 py-3 font-medium cursor-pointer hover:text-white transition-colors"
+                className="text-left px-6 py-3 font-medium cursor-pointer hover:text-text-primary transition-colors"
               >
                 <div className="flex items-center gap-1">
                   Insider
@@ -121,7 +121,7 @@ export function TransactionTable({ transactions }: TransactionTableProps) {
               <th className="text-center px-6 py-3 font-medium">Type</th>
               <th
                 onClick={() => handleSort('shares')}
-                className="text-right px-6 py-3 font-medium cursor-pointer hover:text-white transition-colors"
+                className="text-right px-6 py-3 font-medium cursor-pointer hover:text-text-primary transition-colors"
               >
                 <div className="flex items-center justify-end gap-1">
                   Shares
@@ -131,7 +131,7 @@ export function TransactionTable({ transactions }: TransactionTableProps) {
               <th className="text-right px-6 py-3 font-medium">Price</th>
               <th
                 onClick={() => handleSort('totalValue')}
-                className="text-right px-6 py-3 font-medium cursor-pointer hover:text-white transition-colors"
+                className="text-right px-6 py-3 font-medium cursor-pointer hover:text-text-primary transition-colors"
               >
                 <div className="flex items-center justify-end gap-1">
                   Value
@@ -142,10 +142,10 @@ export function TransactionTable({ transactions }: TransactionTableProps) {
               <th className="text-center px-6 py-3 font-medium">SEC</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-800/50">
+          <tbody className="divide-y divide-border-subtle/50">
             {sortedTransactions.length === 0 ? (
               <tr>
-                <td colSpan={9} className="px-6 py-12 text-center text-slate-500">
+                <td colSpan={9} className="px-6 py-12 text-center text-text-faint">
                   No transactions found
                 </td>
               </tr>
@@ -153,19 +153,19 @@ export function TransactionTable({ transactions }: TransactionTableProps) {
               sortedTransactions.map((tx) => (
                 <tr
                   key={tx.id}
-                  className="hover:bg-slate-800/30 transition-colors"
+                  className="hover:bg-bg-elevated/30 transition-colors"
                 >
                   <td className="px-6 py-4">
-                    <div className="text-white text-sm">{formatDate(tx.tradeDate)}</div>
-                    <div className="text-slate-500 text-xs">
+                    <div className="text-text-primary text-sm">{formatDate(tx.tradeDate)}</div>
+                    <div className="text-text-faint text-xs">
                       Filed: {formatDate(tx.filingDate)}
                     </div>
                   </td>
                   <td className="px-6 py-4">
-                    <div className="text-white font-medium">{tx.insiderName}</div>
+                    <div className="text-text-primary font-medium">{tx.insiderName}</div>
                   </td>
                   <td className="px-6 py-4">
-                    <div className="text-slate-400 text-sm truncate max-w-[150px]">
+                    <div className="text-text-muted text-sm truncate max-w-[150px]">
                       {tx.insiderTitle}
                     </div>
                   </td>
@@ -184,7 +184,7 @@ export function TransactionTable({ transactions }: TransactionTableProps) {
                       {formatNumber(tx.shares)}
                     </span>
                   </td>
-                  <td className="px-6 py-4 text-right text-slate-300">
+                  <td className="px-6 py-4 text-right text-text-secondary">
                     ${tx.pricePerShare.toFixed(2)}
                   </td>
                   <td className="px-6 py-4 text-right">
@@ -208,7 +208,7 @@ export function TransactionTable({ transactions }: TransactionTableProps) {
                       href={tx.secFilingUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white transition-all"
+                      className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-bg-elevated hover:bg-bg-muted text-text-muted hover:text-text-primary transition-all"
                     >
                       <ExternalLink className="w-4 h-4" />
                     </a>
@@ -221,7 +221,7 @@ export function TransactionTable({ transactions }: TransactionTableProps) {
       </div>
 
       {/* Footer */}
-      <div className="px-6 py-3 border-t border-slate-700/50 text-sm text-slate-500">
+      <div className="px-6 py-3 border-t border-border-strong/50 text-sm text-text-faint">
         Showing {sortedTransactions.length} of {transactions.length} transactions
       </div>
     </div>

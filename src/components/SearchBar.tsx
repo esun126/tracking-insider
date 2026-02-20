@@ -76,8 +76,8 @@ export function SearchBar({ onSelect, isLoading }: SearchBarProps) {
     <div className="relative w-full max-w-2xl mx-auto">
       <div className="relative group">
         <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/20 to-violet-500/20 rounded-2xl blur-xl group-hover:blur-2xl transition-all duration-300 opacity-50" />
-        <div className="relative flex items-center bg-slate-900/80 border border-slate-700/50 rounded-2xl overflow-hidden backdrop-blur-xl">
-          <div className="pl-5 pr-3 text-slate-400">
+        <div className="relative flex items-center bg-bg-surface/80 border border-border-strong/50 rounded-2xl overflow-hidden backdrop-blur-xl">
+          <div className="pl-5 pr-3 text-text-muted">
             {searching || isLoading ? (
               <Loader2 className="w-5 h-5 animate-spin" />
             ) : (
@@ -92,7 +92,7 @@ export function SearchBar({ onSelect, isLoading }: SearchBarProps) {
             onKeyDown={handleKeyDown}
             onFocus={() => query.length > 0 && results.length > 0 && setShowDropdown(true)}
             placeholder="Enter ticker or company name (e.g., AAPL, Tesla)"
-            className="flex-1 py-4 pr-4 bg-transparent text-white placeholder-slate-500 focus:outline-none text-lg"
+            className="flex-1 py-4 pr-4 bg-transparent text-text-primary placeholder-text-faint focus:outline-none text-lg"
           />
           {query && (
             <button
@@ -101,7 +101,7 @@ export function SearchBar({ onSelect, isLoading }: SearchBarProps) {
                 setResults([]);
                 inputRef.current?.focus();
               }}
-              className="pr-5 text-slate-400 hover:text-white transition-colors"
+              className="pr-5 text-text-muted hover:text-text-primary transition-colors"
             >
               <X className="w-5 h-5" />
             </button>
@@ -113,18 +113,18 @@ export function SearchBar({ onSelect, isLoading }: SearchBarProps) {
       {showDropdown && results.length > 0 && (
         <div
           ref={dropdownRef}
-          className="absolute top-full left-0 right-0 mt-2 bg-slate-900/95 border border-slate-700/50 rounded-xl overflow-hidden backdrop-blur-xl shadow-2xl z-50"
+          className="absolute top-full left-0 right-0 mt-2 bg-bg-surface/95 border border-border-strong/50 rounded-xl overflow-hidden backdrop-blur-xl shadow-2xl z-50"
         >
           {results.map((company) => (
             <button
               key={company.cik || company.ticker}
               onClick={() => handleSelect(company)}
-              className="w-full px-5 py-3 flex items-center gap-4 hover:bg-slate-800/50 transition-colors text-left"
+              className="w-full px-5 py-3 flex items-center gap-4 hover:bg-bg-elevated/50 transition-colors text-left"
             >
               <span className="font-mono font-bold text-cyan-400 text-lg min-w-[80px]">
                 {company.ticker}
               </span>
-              <span className="text-slate-300 truncate">{company.name}</span>
+              <span className="text-text-secondary truncate">{company.name}</span>
             </button>
           ))}
         </div>

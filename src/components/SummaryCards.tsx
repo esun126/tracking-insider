@@ -38,7 +38,7 @@ export function SummaryCards({ summary, days }: SummaryCardsProps) {
       case 'Bearish':
         return 'text-rose-400 bg-rose-500/10 border-rose-500/30';
       default:
-        return 'text-slate-400 bg-slate-500/10 border-slate-500/30';
+        return 'text-text-muted bg-bg-elevated/50 border-border-strong/30';
     }
   };
 
@@ -57,9 +57,9 @@ export function SummaryCards({ summary, days }: SummaryCardsProps) {
       </div>
 
       {/* Net Value Card */}
-      <div className="p-5 rounded-2xl bg-slate-800/50 border border-slate-700/50 backdrop-blur-xl">
+      <div className="p-5 rounded-2xl bg-bg-elevated/50 border border-border-strong/50 backdrop-blur-xl">
         <div className="flex items-center justify-between mb-3">
-          <span className="text-sm font-medium text-slate-400">Net Flow</span>
+          <span className="text-sm font-medium text-text-muted">Net Flow</span>
           {summary.netValue >= 0 ? (
             <ArrowUpRight className="w-5 h-5 text-emerald-400" />
           ) : (
@@ -80,14 +80,14 @@ export function SummaryCards({ summary, days }: SummaryCardsProps) {
       </div>
 
       {/* Transactions Card */}
-      <div className="p-5 rounded-2xl bg-slate-800/50 border border-slate-700/50 backdrop-blur-xl">
+      <div className="p-5 rounded-2xl bg-bg-elevated/50 border border-border-strong/50 backdrop-blur-xl">
         <div className="flex items-center justify-between mb-3">
-          <span className="text-sm font-medium text-slate-400">Transactions</span>
-          <div className="text-xs px-2 py-1 rounded-full bg-slate-700 text-slate-300">
+          <span className="text-sm font-medium text-text-muted">Transactions</span>
+          <div className="text-xs px-2 py-1 rounded-full bg-bg-muted text-text-secondary">
             {days}d
           </div>
         </div>
-        <div className="text-2xl font-bold text-white">
+        <div className="text-2xl font-bold text-text-primary">
           {summary.totalTransactions}
         </div>
         <div className="mt-2 flex gap-4 text-sm">
@@ -103,12 +103,12 @@ export function SummaryCards({ summary, days }: SummaryCardsProps) {
       </div>
 
       {/* Active Insiders Card */}
-      <div className="p-5 rounded-2xl bg-slate-800/50 border border-slate-700/50 backdrop-blur-xl">
+      <div className="p-5 rounded-2xl bg-bg-elevated/50 border border-border-strong/50 backdrop-blur-xl">
         <div className="flex items-center justify-between mb-3">
-          <span className="text-sm font-medium text-slate-400">Active Insiders</span>
+          <span className="text-sm font-medium text-text-muted">Active Insiders</span>
           <Users className="w-5 h-5 text-violet-400" />
         </div>
-        <div className="text-2xl font-bold text-white">
+        <div className="text-2xl font-bold text-text-primary">
           {summary.activeInsiders}
         </div>
         <div className="mt-2 flex gap-4 text-sm">

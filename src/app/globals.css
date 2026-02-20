@@ -1,20 +1,57 @@
 @import "tailwindcss";
 
-:root {
-  --background: #020617;
-  --foreground: #f8fafc;
+/* ── Dark theme (default) ── */
+[data-theme="dark"] {
+  --bg-base:        #020617;  /* slate-950 */
+  --bg-surface:     #0f172a;  /* slate-900 */
+  --bg-elevated:    #1e293b;  /* slate-800 */
+  --bg-muted:       #334155;  /* slate-700 */
+  --border-strong:  #334155;  /* slate-700 */
+  --border-subtle:  #1e293b;  /* slate-800 */
+  --text-primary:   #ffffff;
+  --text-secondary: #cbd5e1;  /* slate-300 */
+  --text-muted:     #94a3b8;  /* slate-400 */
+  --text-faint:     #64748b;  /* slate-500 */
+  --scrollbar-track:#1e293b;
+  --scrollbar-thumb:#475569;
+  --scrollbar-hover:#64748b;
+}
+
+/* ── Light theme ── */
+[data-theme="light"] {
+  --bg-base:        #f8fafc;  /* slate-50 */
+  --bg-surface:     #f1f5f9;  /* slate-100 */
+  --bg-elevated:    #e2e8f0;  /* slate-200 */
+  --bg-muted:       #cbd5e1;  /* slate-300 */
+  --border-strong:  #94a3b8;  /* slate-400 */
+  --border-subtle:  #cbd5e1;  /* slate-300 */
+  --text-primary:   #0f172a;  /* slate-900 */
+  --text-secondary: #334155;  /* slate-700 */
+  --text-muted:     #475569;  /* slate-600 */
+  --text-faint:     #94a3b8;  /* slate-400 */
+  --scrollbar-track:#e2e8f0;
+  --scrollbar-thumb:#94a3b8;
+  --scrollbar-hover:#64748b;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
+  --color-bg-base:        var(--bg-base);
+  --color-bg-surface:     var(--bg-surface);
+  --color-bg-elevated:    var(--bg-elevated);
+  --color-bg-muted:       var(--bg-muted);
+  --color-border-strong:  var(--border-strong);
+  --color-border-subtle:  var(--border-subtle);
+  --color-text-primary:   var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-muted:     var(--text-muted);
+  --color-text-faint:     var(--text-faint);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
+  background: var(--bg-base);
+  color: var(--text-primary);
   font-family: system-ui, -apple-system, sans-serif;
 }
 
@@ -25,23 +62,23 @@ body {
 }
 
 ::-webkit-scrollbar-track {
-  background: #1e293b;
+  background: var(--scrollbar-track);
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #475569;
+  background: var(--scrollbar-thumb);
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #64748b;
+  background: var(--scrollbar-hover);
 }
 
 /* Selection */
 ::selection {
   background: rgba(139, 92, 246, 0.3);
-  color: #f8fafc;
+  color: var(--text-primary);
 }
 
 /* Focus visible */
